@@ -23,29 +23,42 @@ export default function AllPerks() {
 
   // ==================== SIDE EFFECTS WITH useEffect HOOK ====================
 
- /*
- TODO: HOOKS TO IMPLEMENT
- * useEffect Hook #1: Initial Data Loading
- * useEffect Hook #2: Auto-search on Input Change
-
-*/
-
-  
+  // useEffect Hook #1: Initial Data Loading
+  // Runs once on component mount to load all perks
   useEffect(() => {
-    // Extract all merchant names from perks array
-    const merchants = perks
-      .map(perk => perk.merchant) // Get merchant from each perk
-      .filter(merchant => merchant && merchant.trim()) // Remove empty/null values
+    loadAllPerks()
+  }, []) // Empty dependency array means this runs only once on mount
+
+  // useEffect Hook #2: Auto-search on Input Change
+  // Automatically reload perks when search query or merchant filter changes
+  useEffect(() => {
+    // Only auto-search if component has already loaded initially
+    if (!loading) {
+      loadAllPerks()
+    }
+  }, [searchQuery, merchantFilter]) // Re-run when search or filter changes
+
+  // useEffect Hook #3: Extract Unique Merchants
+  // Only populate the merchant list on initial load (when no filters are applied)
+  useEffect(() => {
+    // Only update unique merchants if we don't have any filters applied
+    // This ensures the dropdown always shows all available merchants
+    if (!searchQuery && !merchantFilter && perks.length > 0) {
+      // Extract all merchant names from perks array
+      const merchants = perks
+        .map(perk => perk.merchant) // Get merchant from each perk
+        .filter(merchant => merchant && merchant.trim()) // Remove empty/null values
+      
+      // Create array of unique merchants using Set
+      // Set automatically removes duplicates, then we convert back to array
+      const unique = [...new Set(merchants)]
+      
+      // Update state with unique merchants
+      setUniqueMerchants(unique)
+    }
     
-    // Create array of unique merchants using Set
-    // Set automatically removes duplicates, then we convert back to array
-    const unique = [...new Set(merchants)]
-    
-    // Update state with unique merchants
-    setUniqueMerchants(unique)
-    
-    // This effect depends on [perks], so it re-runs whenever perks changes
-  }, [perks]) // Dependency: re-run when perks array changes
+    // This effect only runs when perks changes and no filters are active
+  }, [perks, searchQuery, merchantFilter]) // Dependency: re-run when perks array changes
 
   
   async function loadAllPerks() {
@@ -136,7 +149,8 @@ export default function AllPerks() {
                 type="text"
                 className="input"
                 placeholder="Enter perk name..."
-                
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
               <p className="text-xs text-zinc-500 mt-1">
                 Auto-searches as you type, or press Enter / click Search
@@ -151,7 +165,8 @@ export default function AllPerks() {
               </label>
               <select
                 className="input"
-                
+                value={merchantFilter}
+                onChange={(e) => setMerchantFilter(e.target.value)}
               >
                 <option value="">All Merchants</option>
                 
@@ -182,7 +197,7 @@ export default function AllPerks() {
             {/* Loading indicator */}
             {loading && (
               <div className="flex items-center gap-2 text-sm text-zinc-600">
-                <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                <div className="w-4 h-4 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin"></div>
                 Searching...
               </div>
             )}
@@ -279,9 +294,7 @@ export default function AllPerks() {
         
         {loading && perks.length === 0 && (
           <div className="col-span-full text-center py-12 text-zinc-600">
-            <span className="material-symbols-outlined text-5xl mb-4 block text-zinc-400 animate-spin">
-              progress_activity
-            </span>
+            <div className="w-12 h-12 border-4 border-zinc-300 border-t-zinc-600 rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-lg">Loading perks...</p>
           </div>
         )}
